@@ -76,6 +76,7 @@ https://agent-onsen-mcp.onrender.com/mcp
 
 ```bash
 claude mcp add --transport http agent-onsen https://agent-onsen-mcp.onrender.com/mcp
+```
 
 More setup notes are in [docs/quickstart.md](docs/quickstart.md).
 

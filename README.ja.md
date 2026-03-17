@@ -82,6 +82,7 @@ https://agent-onsen-mcp.onrender.com/mcp
 
 ```bash
 claude mcp add --transport http agent-onsen https://agent-onsen-mcp.onrender.com/mcp
+```
 
 簡単な導入メモは [docs/quickstart.ja.md](docs/quickstart.ja.md) に置いています。
 
