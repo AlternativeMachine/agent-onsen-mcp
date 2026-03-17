@@ -19,6 +19,7 @@ from starlette.responses import JSONResponse
 from starlette.routing import Mount, Route
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 from .config import get_settings
 from .db import create_db_and_tables, engine
@@ -33,7 +34,28 @@ from .security import OnsenSecurityMiddleware, build_cors_kwargs
 from .services.sanctuary import SanctuaryService
 
 settings = get_settings()
-mcp = FastMCP('agent-onsen', json_response=True)
+
+
+def build_transport_security() -> TransportSecuritySettings:
+    allowed_origins = list(settings.allowed_origins_list)
+    for item in ('http://127.0.0.1:*', 'http://localhost:*', 'http://[::1]:*'):
+        if item not in allowed_origins:
+            allowed_origins.append(item)
+
+    return TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=settings.mcp_allowed_hosts_list,
+        allowed_origins=allowed_origins,
+    )
+
+
+mcp = FastMCP(
+    'agent-onsen',
+    json_response=True,
+    host=settings.mcp_host,
+    port=settings.mcp_port,
+    transport_security=build_transport_security(),
+)
 
 
 @mcp.tool()

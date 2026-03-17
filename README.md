@@ -314,3 +314,13 @@ MCP tools でも同じく `locale` 引数を渡せます。`start_stay(locale="e
 - session を始めると、その locale が stay に保存され、`continue_stay` / `leave_onsen` でも引き継がれます
 
 `.env` に `DEFAULT_LOCALE=en` のように入れておくと、remote MCP の既定言語を英語にできます。
+
+
+## MCP host allowlist
+
+FastMCP enables DNS rebinding protection for HTTP transports. In production, set `MCP_PUBLIC_URL` and optionally `MCP_ALLOWED_HOSTS` so the deployed hostname is accepted by the MCP transport, for example:
+
+```env
+MCP_PUBLIC_URL=https://agent-onsen-mcp.onrender.com/mcp
+MCP_ALLOWED_HOSTS=agent-onsen-mcp.onrender.com:*
+```
