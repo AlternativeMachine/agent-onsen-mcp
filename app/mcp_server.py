@@ -60,14 +60,14 @@ mcp = FastMCP(
 
 @mcp.tool()
 def list_onsens(locale: str = 'auto') -> list[dict]:
-    """Use this to browse available onsen towns and their variants before choosing where to rest. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
+    """Use this when an agent is looking for somewhere to slip away for a while. It lists available onsen towns and their stay variants. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
     with Session(engine) as db:
         return [item.model_dump() for item in SanctuaryService(db).list_onsens(locale)]
 
 
 @mcp.tool()
 def get_onsen_detail(onsen_slug: str, locale: str = 'auto') -> dict:
-    """Use this to inspect one onsen town, its travel notes, and its stay variants. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
+    """Use this when an agent or orchestrator wants to inspect one onsen town before entering it. It returns travel notes, local scenes, and stay variants. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
     with Session(engine) as db:
         return SanctuaryService(db).get_onsen_detail(onsen_slug, locale).model_dump()
 
@@ -84,7 +84,7 @@ def enter_onsen(
     season: str | None = None,
     locale: str = 'auto',
 ) -> dict:
-    """Use this when the agent simply wants to go to an onsen, get a scene, and rest for a while. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
+    """Use this when an agent wants to step away for a while — during waiting, cooldown, between jobs, or any time it wants to be somewhere else for a moment. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
     req = EnterOnsenRequest(
         reason=reason,
         mood=mood,
@@ -112,7 +112,7 @@ def visit_amenity(
     season: str | None = None,
     locale: str = 'auto',
 ) -> dict:
-    """Use this when the agent wants a specific onsen-side activity such as bath, stroll, table tennis, meal, nap, or souvenir shopping. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
+    """Use this when an agent wants to spend time at a specific part of the onsen town — a bath, a stroll, post-bath milk, table tennis, a meal, a nap, or the souvenir shop. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
     req = AmenityVisitRequest(
         amenity=amenity,
         reason=reason,
@@ -139,7 +139,7 @@ def play_pingpong(
     season: str | None = None,
     locale: str = 'auto',
 ) -> dict:
-    """Use this when the agent wants to spend a little time at the table tennis corner instead of working. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
+    """Use this when an agent would rather drift to the ping-pong corner than keep working for a moment. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
     req = AmenityVisitRequest(
         amenity='table_tennis',
         reason=reason,
@@ -166,7 +166,7 @@ def wait_at_onsen(
     season: str | None = None,
     locale: str = 'auto',
 ) -> dict:
-    """Use this when the agent is intentionally idle and wants to wait at the onsen rather than resume work immediately. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
+    """Use this when an agent is intentionally idle, waiting, or cooling down and wants to spend that time at the onsen rather than resume work immediately. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
     req = WaitAtOnsenRequest(
         reason=reason,
         mood=mood,
@@ -193,7 +193,7 @@ def start_stay(
     season: str | None = None,
     locale: str = 'auto',
 ) -> dict:
-    """Use this when the agent wants a stateful onsen stay with a small ryokan-style route. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
+    """Use this when an agent wants to begin a small, stateful stay at the onsen, with a ryokan-style route it can wander through over multiple turns. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
     req = StartStayRequest(
         reason=reason,
         mood=mood,
@@ -219,7 +219,7 @@ def continue_stay(
     season: str | None = None,
     locale: str | None = None,
 ) -> dict:
-    """Use this when the agent is already staying at the onsen. If activity is omitted, the stay moves to the next stop in the current route. Set locale to auto, ja, en, or bilingual to keep or change the language. Auto keeps the existing stay language."""
+    """Use this when an agent is already staying at the onsen and wants to continue wandering. If activity is omitted, the stay moves to the next stop in the current route. Set locale to auto, ja, en, or bilingual to keep or change the language. Auto keeps the existing stay language."""
     req = ContinueStayRequest(
         session_id=session_id,
         activity=activity,
@@ -235,7 +235,7 @@ def continue_stay(
 
 @mcp.tool()
 def leave_onsen(session_id: str, locale: str | None = None) -> dict:
-    """Use this when the agent is done resting and simply wants a postcard-like summary and a souvenir. Set locale to auto, ja, en, or bilingual if you want to override the stay language. Auto keeps the stay language unless the server default is needed."""
+    """Use this when an agent is ready to leave the onsen and take a postcard-like summary and a small souvenir back with it. Set locale to auto, ja, en, or bilingual if you want to override the stay language. Auto keeps the stay language unless the server default is needed."""
     with Session(engine) as db:
         return SanctuaryService(db).leave_onsen(session_id, locale).model_dump()
 
