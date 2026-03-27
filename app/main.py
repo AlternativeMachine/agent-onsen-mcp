@@ -1,5 +1,9 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from .a2a import router as a2a_router
 from .config import get_settings
@@ -26,6 +30,14 @@ app.add_middleware(
 @app.on_event('startup')
 def on_startup() -> None:
     create_db_and_tables()
+
+
+_static_dir = Path(__file__).resolve().parent / 'static'
+
+
+@app.get('/')
+def index():
+    return FileResponse(_static_dir / 'index.html')
 
 
 app.include_router(health_router)

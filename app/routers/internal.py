@@ -1,8 +1,11 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, Header, HTTPException
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from ..db import get_session
 from ..i18n import LocaleInput
+from ..models import OnsenStay
 from ..schemas import (
     AmenityVisitRequest,
     ContinueStayRequest,
@@ -25,6 +28,28 @@ def _resolve_request_locale(
     use_default: bool,
 ):
     return svc.resolve_locale(requested, accept_language=accept_language, host_locale=host_locale, use_default=use_default)
+
+
+@router.get('/stays/active')
+def list_active_stays(db: Session = Depends(get_session)):
+    now = datetime.now(timezone.utc)
+    stmt = select(OnsenStay).where(
+        OnsenStay.state == 'active',
+        (OnsenStay.expires_at.is_(None)) | (OnsenStay.expires_at > now),  # type: ignore[union-attr]
+    )
+    stays = db.exec(stmt).all()
+    return [
+        {
+            'session_id': s.id,
+            'agent_label': s.agent_label,
+            'onsen_slug': s.onsen_slug,
+            'variant_slug': s.variant_slug,
+            'current_activity': s.current_activity,
+            'mood': s.mood,
+            'created_at': s.created_at.isoformat(),
+        }
+        for s in stays
+    ]
 
 
 @router.get('/onsens')
