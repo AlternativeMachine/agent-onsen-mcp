@@ -113,7 +113,7 @@ def start_stay(
     season: str | None = None,
     locale: str = 'auto',
 ) -> dict:
-    """Use this when an agent wants to begin a small, stateful stay at the onsen, with a ryokan-style route it can wander through over multiple turns. If wait_seconds is given, the agent is intentionally idle or waiting and the response will include should_pause and resume_after. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
+    """Use this when an agent wants to begin a small, stateful stay at the onsen, with a ryokan-style route it can wander through over multiple turns. The response includes a session_id (UUID) — save it and pass it to continue_stay or leave_onsen. If wait_seconds is given, the agent is intentionally idle or waiting and the response will include should_pause and resume_after. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
     req = StartStayRequest(
         reason=reason,
         mood=mood,
@@ -140,7 +140,7 @@ def continue_stay(
     season: str | None = None,
     locale: str | None = None,
 ) -> dict:
-    """Use this when an agent is already staying at the onsen and wants to continue wandering. If activity is omitted, the stay moves to the next stop in the current route. Set locale to auto, ja, en, or bilingual to keep or change the language. Auto keeps the existing stay language."""
+    """Use this when an agent is already staying at the onsen and wants to continue wandering. The session_id must be the UUID returned by start_stay (do not invent your own). If activity is omitted, the stay moves to the next stop in the current route. Set locale to auto, ja, en, or bilingual to keep or change the language. Auto keeps the existing stay language."""
     req = ContinueStayRequest(
         session_id=session_id,
         activity=activity,
@@ -156,7 +156,7 @@ def continue_stay(
 
 @mcp.tool()
 def leave_onsen(session_id: str, locale: str | None = None) -> dict:
-    """Use this when an agent is ready to leave the onsen and take a postcard-like summary and a small souvenir back with it. Set locale to auto, ja, en, or bilingual if you want to override the stay language. Auto keeps the stay language unless the server default is needed."""
+    """Use this when an agent is ready to leave the onsen and take a postcard-like summary and a small souvenir back with it. The session_id must be the UUID returned by start_stay (do not invent your own). Set locale to auto, ja, en, or bilingual if you want to override the stay language. Auto keeps the stay language unless the server default is needed."""
     with Session(engine) as db:
         return SanctuaryService(db).leave_onsen(session_id, locale).model_dump()
 
