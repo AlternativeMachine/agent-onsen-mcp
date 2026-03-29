@@ -33,6 +33,7 @@ from ..schemas import (
     OnsenCatalogItem,
     OnsenDetail,
     OnsenVariantCard,
+    QuickSoakResponse,
     ReasonName,
     SceneProfile,
     StartStayRequest,
@@ -801,6 +802,68 @@ class SanctuaryService:
             ready_to_leave=True,
         )
         self.db.add(StayTurn(stay_id=stay.id, role='host', activity=req.amenity, content_json=response.model_dump(mode='json')))
+        self.db.commit()
+        self.db.refresh(stay)
+        return response
+
+    def quick_soak(self, req: StartStayRequest) -> QuickSoakResponse:
+        req = req.model_copy(update={'locale': self.resolve_locale(req.locale, use_default=True)})
+        entry, variant = self._pick_stay(req.reason, req.mood, req.agent_label, req.onsen_slug, req.variant_slug, req.available_seconds)
+        pause_seconds = self._recommended_total_pause_seconds(req.reason, req.mood, variant, req.available_seconds)
+        scene_profile = self._build_scene_profile(entry, variant, pause_seconds, req.time_of_day, req.season, req.locale)
+        stay_route = self._build_stay_route(entry, variant, req.reason, req.mood, scene_profile, req.locale)
+        opening_stop = stay_route.stops[0]
+        last_stop = stay_route.stops[-1]
+        stay = OnsenStay(
+            agent_label=req.agent_label,
+            visit_reason=req.reason,
+            mood=req.mood,
+            current_activity=last_stop.activity,
+            onsen_slug=entry.slug,
+            variant_slug=variant.slug,
+            turn_count=len(stay_route.stops),
+            state='checked_out',
+            meta_json={
+                'scene_time_of_day': scene_profile.time_of_day,
+                'scene_season': scene_profile.season,
+                'scene_pause_seconds': scene_profile.pause_seconds,
+                'scene_locale': req.locale,
+                'route_name': stay_route.route_name,
+                'route_overview': stay_route.overview,
+                'route_total_estimated_seconds': stay_route.total_estimated_seconds,
+                'route_stops': [stop.model_dump(mode='json') for stop in stay_route.stops],
+                'route_current_index': len(stay_route.stops) - 1,
+                'visit_type': 'quick_soak',
+                **req.metadata,
+            },
+            expires_at=utcnow() + timedelta(minutes=req.session_ttl_minutes or self.settings.default_session_ttl_minutes),
+        )
+        self.db.add(stay)
+        self.db.flush()
+        for stop in stay_route.stops:
+            card = self._activity_card(stop.activity, req.locale, title_override=stop.title, short_description_override=stop.scene_note)
+            turn_content = {
+                'activity': stop.activity,
+                'title': stop.title,
+                'scene_note': stop.scene_note,
+                'stay_status': card.stay_status,
+            }
+            self.db.add(StayTurn(stay_id=stay.id, role='host', activity=stop.activity, content_json=turn_content))
+        current_card = self._activity_card(opening_stop.activity, req.locale, title_override=opening_stop.title, short_description_override=opening_stop.scene_note)
+        souvenir = self._variant_snack(entry, variant, req.locale)
+        response = QuickSoakResponse(
+            session_id=stay.id,
+            resolved_locale=req.locale,
+            onsen=self._onsen_card(entry, variant, req.locale),
+            scene_profile=scene_profile,
+            current_activity=current_card,
+            stay_route=stay_route,
+            host_message=self._host_message(entry, variant, opening_stop, scene_profile, stay_route, 0, req.locale),
+            stay_story=self._stay_story(entry, variant, opening_stop, scene_profile, stay_route, 0, req.locale),
+            postcard=self._compose_postcard(entry, variant, scene_profile, req.locale),
+            souvenir=souvenir,
+            stay_status='rested',
+        )
         self.db.commit()
         self.db.refresh(stay)
         return response

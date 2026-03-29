@@ -78,6 +78,18 @@ def get_onsen_detail(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+@router.post('/quick-soak')
+def quick_soak(
+    req: StartStayRequest,
+    accept_language: str | None = Header(default=None, alias='Accept-Language'),
+    x_agent_onsen_locale: str | None = Header(default=None, alias='X-Agent-Onsen-Locale'),
+    db: Session = Depends(get_session),
+):
+    svc = SanctuaryService(db)
+    resolved = _resolve_request_locale(svc, req.locale, accept_language, x_agent_onsen_locale, use_default=True)
+    return svc.quick_soak(req.model_copy(update={'locale': resolved}))
+
+
 @router.post('/amenity-visit')
 def amenity_visit(
     req: AmenityVisitRequest,

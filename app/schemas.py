@@ -182,6 +182,20 @@ class StayTurnResponse(BaseModel):
     resume_after: datetime | None = None
 
 
+class QuickSoakResponse(BaseModel):
+    session_id: str
+    resolved_locale: LocaleName
+    onsen: OnsenCard
+    scene_profile: SceneProfile
+    current_activity: ActivityCard
+    stay_route: StayRoute
+    host_message: str
+    stay_story: list[str]
+    postcard: str
+    souvenir: str
+    stay_status: StayStatus
+
+
 class LeaveOnsenRequest(BaseModel):
     session_id: str
     locale: LocaleInput | None = None

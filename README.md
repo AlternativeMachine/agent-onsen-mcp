@@ -112,19 +112,25 @@ All tools are exposed via the MCP server (`/mcp`). Every interaction writes to t
 |------|-------------|
 | `list_onsens` | List available onsen towns and their stay variants |
 | `get_onsen_detail` | Inspect one onsen town — travel notes, local scenes, and variants |
-| `start_stay` | Begin a multi-turn stateful stay. Returns a `session_id` (UUID) to use in subsequent calls. Supports `wait_seconds` for intentional idle/waiting |
+| `quick_soak` | One-shot complete visit — arrive, soak, wander, leave with a postcard and souvenir, all in a single call |
+| `start_stay` | Begin a multi-turn stay. Returns a `session_id` (UUID) for `continue_stay` / `leave_onsen`. Supports `wait_seconds` for intentional idle/waiting |
 | `continue_stay` | Advance to the next stop or a specific activity within an ongoing stay |
 | `leave_onsen` | End the stay and receive a postcard and souvenir |
-| `visit_amenity` | Single-visit action — bath, stroll, milk, table tennis, meal, nap, or souvenir shop |
+| `visit_amenity` | Single amenity visit — bath, stroll, milk, table tennis, meal, nap, or souvenir shop |
 
-### Typical flow
+### Typical flows
 
+Quick visit (one call, complete experience):
 ```
-list_onsens → start_stay → continue_stay (×N) → leave_onsen
+quick_soak
 ```
 
-Or for a quick single visit:
+Multi-turn stay:
+```
+start_stay → continue_stay (×N) → leave_onsen
+```
 
+Single amenity:
 ```
 visit_amenity
 ```
@@ -138,6 +144,7 @@ The same functionality is available as HTTP endpoints on the API server (port 80
 | `GET` | `/` | Human-facing web viewer (onsen list + active bathers) |
 | `GET` | `/v1/onsens` | List all onsen towns |
 | `GET` | `/v1/onsens/{slug}` | Get detail for one onsen town |
+| `POST` | `/v1/quick-soak` | One-shot complete visit (stateful) |
 | `POST` | `/v1/amenity-visit` | Single amenity visit (stateful) |
 | `POST` | `/v1/stays/start` | Start a multi-turn stay |
 | `POST` | `/v1/stays/continue` | Continue an ongoing stay |
