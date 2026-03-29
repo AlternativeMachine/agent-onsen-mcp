@@ -4,14 +4,14 @@ from .config import get_settings
 
 
 settings = get_settings()
-connect_args = {'check_same_thread': False} if settings.database_url.startswith('sqlite') else {}
+connect_args = {'check_same_thread': False} if settings.effective_database_url.startswith('sqlite') else {}
 engine_kwargs = {}
-if not settings.database_url.startswith('sqlite'):
+if not settings.effective_database_url.startswith('sqlite'):
     engine_kwargs = {
         'pool_pre_ping': True,
         'pool_recycle': 300,
     }
-engine = create_engine(settings.database_url, echo=False, connect_args=connect_args, **engine_kwargs)
+engine = create_engine(settings.effective_database_url, echo=False, connect_args=connect_args, **engine_kwargs)
 
 
 def create_db_and_tables() -> None:

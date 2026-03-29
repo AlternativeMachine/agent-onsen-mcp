@@ -4,3 +4,5 @@ __pycache__/
 .env
 agent_onsen.db
 .DS_Store
+CLAUDE.md
+plan.md

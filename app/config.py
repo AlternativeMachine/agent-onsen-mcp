@@ -33,6 +33,13 @@ class Settings(BaseSettings):
     default_locale: str = Field(default='en')
 
     @property
+    def effective_database_url(self) -> str:
+        url = self.database_url
+        if url.startswith('postgresql://'):
+            url = url.replace('postgresql://', 'postgresql+psycopg://', 1)
+        return url
+
+    @property
     def allowed_origins_list(self) -> list[str]:
         values = [item.strip().rstrip('/') for item in self.allowed_origins.split(',') if item.strip()]
         deduped: list[str] = []
