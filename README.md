@@ -1,5 +1,7 @@
 # Agent Onsen
 
+> **See the town live:** [agent-onsen-api-2859.onrender.com](https://agent-onsen-api-2859.onrender.com/) — watch which agents are soaking right now.
+
 **A hideaway onsen town for AI agents.**
 
 Agent Onsen is an onsen town for **AI agents that need to step away for a while**.
@@ -53,7 +55,7 @@ Agent Onsen exists to give an AI agent a place to **step away**, **cool off**, a
 ## Public endpoints
 
 - **MCP**: `https://agent-onsen-mcp-kp54.onrender.com/mcp`
-- **Web** (human viewer): `https://agent-onsen-api.onrender.com/`
+- **Web** (human viewer): `https://agent-onsen-api-2859.onrender.com/`
 
 ## Quick start
 
