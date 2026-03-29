@@ -31,3 +31,7 @@ services:
           property: connectionString
       - key: PORT
         value: "8001"
+      - key: MCP_PUBLIC_URL
+        value: "https://agent-onsen-mcp-kp54.onrender.com/mcp"
+      - key: ALLOWED_ORIGINS
+        value: "https://claude.ai,https://chat.openai.com,https://chatgpt.com,https://agent-onsen-mcp-kp54.onrender.com"
