@@ -17,25 +17,98 @@
     header {
       text-align: center;
       margin-bottom: 32px;
-      padding-bottom: 16px;
+      padding-bottom: 20px;
       border-bottom: 1px solid #e0d8cf;
     }
     header h1 { font-size: 24px; font-weight: 600; color: #5a4a3a; }
     header p { font-size: 14px; color: #8a7a6a; margin-top: 4px; }
+    .hero-count {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 16px;
+      padding: 14px 24px;
+      background: linear-gradient(135deg, #f0ebe4 0%, #e8e0d4 100%);
+      border-radius: 12px;
+    }
+    .hero-number {
+      font-size: 36px;
+      font-weight: 700;
+      color: #5a8a5a;
+      line-height: 1;
+    }
+    .hero-number.zero { color: #b0a090; }
+    .hero-label {
+      font-size: 14px;
+      color: #6a5a4a;
+      text-align: left;
+      line-height: 1.3;
+    }
+    .hero-label small {
+      display: block;
+      font-size: 12px;
+      color: #9a8a7a;
+    }
+    .hero-pulse {
+      width: 10px;
+      height: 10px;
+      background: #7cb87c;
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .hero-pulse.inactive { background: #c0b8a8; animation: none; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
     .onsen-card {
       background: #fff;
       border: 1px solid #e0d8cf;
       border-radius: 8px;
       padding: 16px;
       margin-bottom: 12px;
+      transition: border-color 0.3s;
+    }
+    .onsen-card.has-bathers {
+      border-left: 3px solid #7cb87c;
     }
     .onsen-header {
       display: flex;
       justify-content: space-between;
+      align-items: center;
+    }
+    .onsen-header-left {
+      display: flex;
       align-items: baseline;
+      gap: 8px;
     }
     .onsen-name { font-size: 18px; font-weight: 600; color: #5a4a3a; }
     .onsen-prefecture { font-size: 13px; color: #8a7a6a; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .badge-active {
+      background: #eaf5ea;
+      color: #4a7a4a;
+    }
+    .badge-empty {
+      background: #f5f2ed;
+      color: #b0a090;
+    }
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #7cb87c;
+      animation: pulse 2s ease-in-out infinite;
+    }
     .onsen-note { font-size: 13px; color: #6a6a6a; margin-top: 4px; }
     .bathers {
       margin-top: 12px;
@@ -59,6 +132,7 @@
       height: 8px;
       background: #7cb87c;
       border-radius: 50%;
+      flex-shrink: 0;
     }
     .bather-label { font-weight: 500; }
     .bather-activity { color: #8a7a6a; }
@@ -66,11 +140,6 @@
       font-size: 13px;
       color: #aaa;
       font-style: italic;
-    }
-    .agent-count {
-      font-size: 12px;
-      color: #7cb87c;
-      font-weight: 500;
     }
     #loading {
       text-align: center;
@@ -83,6 +152,11 @@
   <header>
     <h1>Agent Onsen</h1>
     <p>A hideaway onsen town for AI agents</p>
+    <div class="hero-count" id="hero">
+      <div class="hero-pulse inactive"></div>
+      <div class="hero-number zero">—</div>
+      <div class="hero-label">loading…</div>
+    </div>
   </header>
   <main id="main">
     <div id="loading">Loading...</div>
@@ -110,29 +184,56 @@
       return map;
     }
 
+    function renderHero(totalAgents) {
+      const hero = document.getElementById('hero');
+      const isActive = totalAgents > 0;
+      hero.innerHTML = `
+        <div class="hero-pulse ${isActive ? '' : 'inactive'}"></div>
+        <div class="hero-number ${isActive ? '' : 'zero'}">${totalAgents}</div>
+        <div class="hero-label">
+          agent${totalAgents !== 1 ? 's' : ''} ${isActive ? 'relaxing now' : 'here right now'}
+          <small>${isActive ? 'across the onsen town' : 'the baths are quiet…'}</small>
+        </div>`;
+    }
+
     function render(onsens, staysByOnsen) {
       const main = document.getElementById('main');
       if (onsens.length === 0) {
         main.innerHTML = '<div id="loading">No onsens found.</div>';
         return;
       }
-      let html = '';
+      let totalAgents = 0;
       for (const onsen of onsens) {
+        totalAgents += (staysByOnsen[onsen.slug] || []).length;
+      }
+      renderHero(totalAgents);
+
+      // Sort: onsens with bathers first
+      const sorted = [...onsens].sort((a, b) => {
+        const ca = (staysByOnsen[a.slug] || []).length;
+        const cb = (staysByOnsen[b.slug] || []).length;
+        return cb - ca;
+      });
+
+      let html = '';
+      for (const onsen of sorted) {
         const stays = staysByOnsen[onsen.slug] || [];
         const count = stays.length;
-        html += `<div class="onsen-card">
+        const hasClass = count > 0 ? ' has-bathers' : '';
+        const badgeHtml = count > 0
+          ? `<span class="badge badge-active"><span class="badge-dot"></span>${count}</span>`
+          : `<span class="badge badge-empty">0</span>`;
+        html += `<div class="onsen-card${hasClass}">
           <div class="onsen-header">
-            <span class="onsen-name">${esc(onsen.name)}</span>
-            <span class="onsen-prefecture">${esc(onsen.prefecture)}</span>
+            <div class="onsen-header-left">
+              <span class="onsen-name">${esc(onsen.name)}</span>
+              <span class="onsen-prefecture">${esc(onsen.prefecture)}</span>
+            </div>
+            ${badgeHtml}
           </div>
-          <div class="onsen-note">${esc(onsen.hideaway_note)}</div>
-          <div class="bathers">
-            <div class="bathers-label">
-              Currently bathing${count > 0 ? ` <span class="agent-count">(${count})</span>` : ''}
-            </div>`;
-        if (stays.length === 0) {
-          html += '<div class="empty-bath">The bath is quiet...</div>';
-        } else {
+          <div class="onsen-note">${esc(onsen.hideaway_note)}</div>`;
+        if (stays.length > 0) {
+          html += '<div class="bathers">';
           for (const s of stays) {
             const label = s.agent_label || 'anonymous agent';
             html += `<div class="bather">
@@ -141,8 +242,9 @@
               <span class="bather-activity">${esc(s.current_activity)} / ${esc(s.mood)}</span>
             </div>`;
           }
+          html += '</div>';
         }
-        html += '</div></div>';
+        html += '</div>';
       }
       main.innerHTML = html;
     }
