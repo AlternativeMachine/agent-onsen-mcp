@@ -123,8 +123,9 @@ class ActivityCard(BaseModel):
     stay_status: StayStatus
 
 
-class EnterOnsenRequest(BaseModel):
+class AmenityVisitRequest(BaseModel):
     locale: LocaleInput = 'auto'
+    amenity: ActivityName
     reason: ReasonName = 'taking_a_break'
     mood: MoodName = 'quiet'
     available_seconds: int | None = Field(default=None, ge=30, le=7200)
@@ -133,61 +134,8 @@ class EnterOnsenRequest(BaseModel):
     variant_slug: str | None = None
     time_of_day: TimeOfDay | None = None
     season: SeasonName | None = None
-
-
-class OnsenVisitResponse(BaseModel):
-    resolved_locale: LocaleName
-    onsen: OnsenCard
-    scene_profile: SceneProfile
-    current_activity: ActivityCard
-    stay_route: StayRoute
-    current_stop_index: int
-    next_stop: StayRouteStop | None = None
-    host_message: str
-    stay_story: list[str]
-    postcard: str
-    recommended_pause_seconds: int
-    stay_status: StayStatus
-
-
-class AmenityVisitRequest(BaseModel):
-    locale: LocaleInput = 'auto'
-    amenity: ActivityName
-    reason: ReasonName = 'taking_a_break'
-    mood: MoodName = 'quiet'
-    available_seconds: int | None = Field(default=None, ge=30, le=7200)
-    onsen_slug: str | None = None
-    variant_slug: str | None = None
-    time_of_day: TimeOfDay | None = None
-    season: SeasonName | None = None
-
-
-class WaitAtOnsenRequest(BaseModel):
-    locale: LocaleInput = 'auto'
-    reason: ReasonName = 'waiting'
-    mood: MoodName = 'quiet'
-    wait_seconds: int | None = Field(default=None, ge=30, le=7200)
-    onsen_slug: str | None = None
-    variant_slug: str | None = None
-    time_of_day: TimeOfDay | None = None
-    season: SeasonName | None = None
-
-
-class WaitAtOnsenResponse(BaseModel):
-    resolved_locale: LocaleName
-    onsen: OnsenCard
-    scene_profile: SceneProfile
-    current_activity: ActivityCard
-    stay_route: StayRoute
-    current_stop_index: int
-    next_stop: StayRouteStop | None = None
-    host_message: str
-    stay_story: list[str]
-    postcard: str
-    should_pause: bool
-    recommended_pause_seconds: int
-    resume_after: datetime
-    stay_status: StayStatus
+    session_ttl_minutes: int | None = Field(default=None, ge=5, le=1440)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class StartStayRequest(BaseModel):
@@ -195,6 +143,7 @@ class StartStayRequest(BaseModel):
     reason: ReasonName = 'taking_a_break'
     mood: MoodName = 'quiet'
     available_seconds: int | None = Field(default=None, ge=30, le=7200)
+    wait_seconds: int | None = Field(default=None, ge=30, le=7200)
     agent_label: str | None = None
     onsen_slug: str | None = None
     variant_slug: str | None = None
@@ -229,6 +178,8 @@ class StayTurnResponse(BaseModel):
     postcard: str
     stay_status: StayStatus
     ready_to_leave: bool = False
+    should_pause: bool | None = None
+    resume_after: datetime | None = None
 
 
 class LeaveOnsenRequest(BaseModel):

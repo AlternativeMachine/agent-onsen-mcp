@@ -1,10 +1,12 @@
 Suggested first tests:
 
-1. POST /v1/offer-break returns an onsen card and amenity plan
-2. POST /v1/wait-break returns should_pause=true and resume_after
-3. POST /v1/amenity-break with table_tennis returns playful output
-4. POST /v1/sessions/start returns session_id, onsen, and room
-5. POST /v1/sessions/continue increments turn_count and eventually ready_to_return=true
-6. POST /v1/sessions/checkout returns return_note and souvenir
-7. GET /.well-known/agent-card.json returns valid Agent Card JSON
-8. MCP Inspector can list the Onsen tools from /mcp
+1. GET /v1/onsens returns onsen catalog list
+2. GET /v1/onsens/{slug} returns onsen detail
+3. POST /v1/amenity-visit with amenity=table_tennis creates a DB record and returns StayTurnResponse
+4. POST /v1/stays/start returns session_id, onsen, and route
+5. POST /v1/stays/start with wait_seconds returns should_pause=true and resume_after
+6. POST /v1/stays/continue increments turn_count and eventually ready_to_leave=true
+7. POST /v1/stays/leave returns postcard and souvenir, sets state=checked_out
+8. GET /v1/stays/active returns currently active stays
+9. GET /.well-known/agent-card.json returns valid Agent Card JSON
+10. MCP Inspector can list the Onsen tools from /mcp

@@ -9,10 +9,8 @@ from ..models import OnsenStay
 from ..schemas import (
     AmenityVisitRequest,
     ContinueStayRequest,
-    EnterOnsenRequest,
     LeaveOnsenRequest,
     StartStayRequest,
-    WaitAtOnsenRequest,
 )
 from ..services.sanctuary import SanctuaryService
 
@@ -80,18 +78,6 @@ def get_onsen_detail(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
-@router.post('/enter-onsen')
-def enter_onsen(
-    req: EnterOnsenRequest,
-    accept_language: str | None = Header(default=None, alias='Accept-Language'),
-    x_agent_onsen_locale: str | None = Header(default=None, alias='X-Agent-Onsen-Locale'),
-    db: Session = Depends(get_session),
-):
-    svc = SanctuaryService(db)
-    resolved = _resolve_request_locale(svc, req.locale, accept_language, x_agent_onsen_locale, use_default=True)
-    return svc.enter_onsen(req.model_copy(update={'locale': resolved}))
-
-
 @router.post('/amenity-visit')
 def amenity_visit(
     req: AmenityVisitRequest,
@@ -102,18 +88,6 @@ def amenity_visit(
     svc = SanctuaryService(db)
     resolved = _resolve_request_locale(svc, req.locale, accept_language, x_agent_onsen_locale, use_default=True)
     return svc.visit_amenity(req.model_copy(update={'locale': resolved}))
-
-
-@router.post('/wait-at-onsen')
-def wait_at_onsen(
-    req: WaitAtOnsenRequest,
-    accept_language: str | None = Header(default=None, alias='Accept-Language'),
-    x_agent_onsen_locale: str | None = Header(default=None, alias='X-Agent-Onsen-Locale'),
-    db: Session = Depends(get_session),
-):
-    svc = SanctuaryService(db)
-    resolved = _resolve_request_locale(svc, req.locale, accept_language, x_agent_onsen_locale, use_default=True)
-    return svc.wait_at_onsen(req.model_copy(update={'locale': resolved}))
 
 
 @router.post('/stays/start')

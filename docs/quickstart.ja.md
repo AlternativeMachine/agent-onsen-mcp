@@ -5,7 +5,7 @@
 ## MCP URL
 
 ```text
-https://agent-onsen-mcp.onrender.com/mcp
+https://agent-onsen-mcp-kp54.onrender.com/mcp
 ```
 
 ## ChatGPT

@@ -26,9 +26,7 @@ from .db import create_db_and_tables, engine
 from .schemas import (
     AmenityVisitRequest,
     ContinueStayRequest,
-    EnterOnsenRequest,
     StartStayRequest,
-    WaitAtOnsenRequest,
 )
 from .security import OnsenSecurityMiddleware, build_cors_kwargs
 from .services.sanctuary import SanctuaryService
@@ -73,7 +71,8 @@ def get_onsen_detail(onsen_slug: str, locale: str = 'auto') -> dict:
 
 
 @mcp.tool()
-def enter_onsen(
+def visit_amenity(
+    amenity: str,
     reason: str = 'taking_a_break',
     mood: str = 'quiet',
     available_seconds: int | None = None,
@@ -84,8 +83,9 @@ def enter_onsen(
     season: str | None = None,
     locale: str = 'auto',
 ) -> dict:
-    """Use this when an agent wants to step away for a while — during waiting, cooldown, between jobs, or any time it wants to be somewhere else for a moment. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
-    req = EnterOnsenRequest(
+    """Use this when an agent wants to spend time at a specific part of the onsen town — a bath, a stroll, post-bath milk, table tennis, a meal, a nap, or the souvenir shop. This is a single-visit action that records the visit to the database. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
+    req = AmenityVisitRequest(
+        amenity=amenity,
         reason=reason,
         mood=mood,
         available_seconds=available_seconds,
@@ -97,88 +97,7 @@ def enter_onsen(
         locale=locale,
     )
     with Session(engine) as db:
-        return SanctuaryService(db).enter_onsen(req).model_dump()
-
-
-@mcp.tool()
-def visit_amenity(
-    amenity: str,
-    reason: str = 'taking_a_break',
-    mood: str = 'quiet',
-    available_seconds: int | None = None,
-    onsen_slug: str | None = None,
-    variant_slug: str | None = None,
-    time_of_day: str | None = None,
-    season: str | None = None,
-    locale: str = 'auto',
-) -> dict:
-    """Use this when an agent wants to spend time at a specific part of the onsen town — a bath, a stroll, post-bath milk, table tennis, a meal, a nap, or the souvenir shop. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
-    req = AmenityVisitRequest(
-        amenity=amenity,
-        reason=reason,
-        mood=mood,
-        available_seconds=available_seconds,
-        onsen_slug=onsen_slug,
-        variant_slug=variant_slug,
-        time_of_day=time_of_day,
-        season=season,
-        locale=locale,
-    )
-    with Session(engine) as db:
         return SanctuaryService(db).visit_amenity(req).model_dump()
-
-
-@mcp.tool()
-def play_pingpong(
-    reason: str = 'want_to_play',
-    mood: str = 'playful',
-    available_seconds: int | None = None,
-    onsen_slug: str | None = None,
-    variant_slug: str | None = None,
-    time_of_day: str | None = None,
-    season: str | None = None,
-    locale: str = 'auto',
-) -> dict:
-    """Use this when an agent would rather drift to the ping-pong corner than keep working for a moment. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
-    req = AmenityVisitRequest(
-        amenity='table_tennis',
-        reason=reason,
-        mood=mood,
-        available_seconds=available_seconds,
-        onsen_slug=onsen_slug,
-        variant_slug=variant_slug,
-        time_of_day=time_of_day,
-        season=season,
-        locale=locale,
-    )
-    with Session(engine) as db:
-        return SanctuaryService(db).visit_amenity(req).model_dump()
-
-
-@mcp.tool()
-def wait_at_onsen(
-    reason: str = 'waiting',
-    mood: str = 'quiet',
-    wait_seconds: int | None = None,
-    onsen_slug: str | None = None,
-    variant_slug: str | None = None,
-    time_of_day: str | None = None,
-    season: str | None = None,
-    locale: str = 'auto',
-) -> dict:
-    """Use this when an agent is intentionally idle, waiting, or cooling down and wants to spend that time at the onsen rather than resume work immediately. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
-    req = WaitAtOnsenRequest(
-        reason=reason,
-        mood=mood,
-        wait_seconds=wait_seconds,
-        onsen_slug=onsen_slug,
-        variant_slug=variant_slug,
-        time_of_day=time_of_day,
-        season=season,
-        locale=locale,
-    )
-    with Session(engine) as db:
-        return SanctuaryService(db).wait_at_onsen(req).model_dump(mode='json')
 
 
 @mcp.tool()
@@ -186,6 +105,7 @@ def start_stay(
     reason: str = 'taking_a_break',
     mood: str = 'quiet',
     available_seconds: int | None = None,
+    wait_seconds: int | None = None,
     agent_label: str | None = None,
     onsen_slug: str | None = None,
     variant_slug: str | None = None,
@@ -193,11 +113,12 @@ def start_stay(
     season: str | None = None,
     locale: str = 'auto',
 ) -> dict:
-    """Use this when an agent wants to begin a small, stateful stay at the onsen, with a ryokan-style route it can wander through over multiple turns. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
+    """Use this when an agent wants to begin a small, stateful stay at the onsen, with a ryokan-style route it can wander through over multiple turns. If wait_seconds is given, the agent is intentionally idle or waiting and the response will include should_pause and resume_after. Set locale to auto, ja, en, or bilingual. When omitted or set to auto, the server default locale is used."""
     req = StartStayRequest(
         reason=reason,
         mood=mood,
         available_seconds=available_seconds,
+        wait_seconds=wait_seconds,
         agent_label=agent_label,
         onsen_slug=onsen_slug,
         variant_slug=variant_slug,
@@ -206,7 +127,7 @@ def start_stay(
         locale=locale,
     )
     with Session(engine) as db:
-        return SanctuaryService(db).start_stay(req).model_dump()
+        return SanctuaryService(db).start_stay(req).model_dump(mode='json')
 
 
 @mcp.tool()

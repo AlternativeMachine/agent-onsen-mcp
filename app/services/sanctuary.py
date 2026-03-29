@@ -27,22 +27,18 @@ from ..schemas import (
     ActivityName,
     AmenityVisitRequest,
     ContinueStayRequest,
-    EnterOnsenRequest,
     LeaveOnsenResponse,
     MoodName,
     OnsenCard,
     OnsenCatalogItem,
     OnsenDetail,
     OnsenVariantCard,
-    OnsenVisitResponse,
     ReasonName,
     SceneProfile,
     StartStayRequest,
     StayRoute,
     StayRouteStop,
     StayTurnResponse,
-    WaitAtOnsenRequest,
-    WaitAtOnsenResponse,
 )
 
 
@@ -754,84 +750,60 @@ class SanctuaryService:
                 return stop.step_index
         return 0
 
-    def _snapshot(
-        self,
-        entry: OnsenEntry,
-        variant: OnsenVariant,
-        reason: ReasonName,
-        mood: MoodName,
-        current_activity: ActivityName,
-        pause_seconds: int,
-        time_of_day: str | None,
-        season: str | None,
-        locale: LocaleName,
-        note_text: str | None = None,
-    ) -> OnsenVisitResponse:
-        scene_profile = self._build_scene_profile(entry, variant, pause_seconds, time_of_day, season, locale)
-        stay_route = self._build_stay_route(entry, variant, reason, mood, scene_profile, locale, force_current_activity=current_activity)
-        current_stop_index = self._current_stop_index_for_activity(stay_route, current_activity)
+    # ---------- public entry points ----------
+
+    def visit_amenity(self, req: AmenityVisitRequest) -> StayTurnResponse:
+        req = req.model_copy(update={'locale': self.resolve_locale(req.locale, use_default=True)})
+        entry, variant = self._pick_stay(req.reason, req.mood, req.agent_label, req.onsen_slug, req.variant_slug, req.available_seconds)
+        pause_seconds = self._recommended_total_pause_seconds(req.reason, req.mood, variant, req.available_seconds)
+        scene_profile = self._build_scene_profile(entry, variant, pause_seconds, req.time_of_day, req.season, req.locale)
+        stay_route = self._build_stay_route(entry, variant, req.reason, req.mood, scene_profile, req.locale, force_current_activity=req.amenity)
+        current_stop_index = self._current_stop_index_for_activity(stay_route, req.amenity)
         current_stop = stay_route.stops[current_stop_index]
-        postcard = self._compose_postcard(entry, variant, scene_profile, locale)
-        current_card = self._activity_card(current_activity, locale, title_override=current_stop.title, short_description_override=current_stop.scene_note)
-        return OnsenVisitResponse(
-            resolved_locale=locale,
-            onsen=self._onsen_card(entry, variant, locale),
+        stay = OnsenStay(
+            agent_label=req.agent_label,
+            visit_reason=req.reason,
+            mood=req.mood,
+            current_activity=req.amenity,
+            onsen_slug=entry.slug,
+            variant_slug=variant.slug,
+            meta_json={
+                'scene_time_of_day': scene_profile.time_of_day,
+                'scene_season': scene_profile.season,
+                'scene_pause_seconds': scene_profile.pause_seconds,
+                'scene_locale': req.locale,
+                'route_name': stay_route.route_name,
+                'route_overview': stay_route.overview,
+                'route_total_estimated_seconds': stay_route.total_estimated_seconds,
+                'route_stops': [stop.model_dump(mode='json') for stop in stay_route.stops],
+                'route_current_index': current_stop_index,
+                'visit_type': 'amenity',
+                **req.metadata,
+            },
+            expires_at=utcnow() + timedelta(minutes=req.session_ttl_minutes or self.settings.default_session_ttl_minutes),
+        )
+        self.db.add(stay)
+        self.db.flush()
+        current_card = self._activity_card(req.amenity, req.locale, title_override=current_stop.title, short_description_override=current_stop.scene_note)
+        response = StayTurnResponse(
+            session_id=stay.id,
+            resolved_locale=req.locale,
+            onsen=self._onsen_card(entry, variant, req.locale),
             scene_profile=scene_profile,
             current_activity=current_card,
             stay_route=stay_route,
             current_stop_index=current_stop_index,
             next_stop=self._next_stop(stay_route, current_stop_index),
-            host_message=self._host_message(entry, variant, current_stop, scene_profile, stay_route, current_stop_index, locale, note_text=note_text),
-            stay_story=self._stay_story(entry, variant, current_stop, scene_profile, stay_route, current_stop_index, locale),
-            postcard=postcard,
-            recommended_pause_seconds=pause_seconds,
+            host_message=self._host_message(entry, variant, current_stop, scene_profile, stay_route, current_stop_index, req.locale),
+            stay_story=self._stay_story(entry, variant, current_stop, scene_profile, stay_route, current_stop_index, req.locale),
+            postcard=self._compose_postcard(entry, variant, scene_profile, req.locale),
             stay_status=current_card.stay_status,
+            ready_to_leave=True,
         )
-
-    # ---------- public entry points ----------
-
-    def enter_onsen(self, req: EnterOnsenRequest) -> OnsenVisitResponse:
-        req = req.model_copy(update={'locale': self.resolve_locale(req.locale, use_default=True)})
-        entry, variant = self._pick_stay(req.reason, req.mood, req.agent_label, req.onsen_slug, req.variant_slug, req.available_seconds)
-        pause_seconds = self._recommended_total_pause_seconds(req.reason, req.mood, variant, req.available_seconds)
-        scene_profile = self._build_scene_profile(entry, variant, pause_seconds, req.time_of_day, req.season, req.locale)
-        stay_route = self._build_stay_route(entry, variant, req.reason, req.mood, scene_profile, req.locale)
-        activity = stay_route.stops[0].activity
-        return self._snapshot(entry, variant, req.reason, req.mood, activity, pause_seconds, req.time_of_day, req.season, req.locale)
-
-    def visit_amenity(self, req: AmenityVisitRequest) -> OnsenVisitResponse:
-        req = req.model_copy(update={'locale': self.resolve_locale(req.locale, use_default=True)})
-        entry, variant = self._pick_stay(req.reason, req.mood, None, req.onsen_slug, req.variant_slug, req.available_seconds)
-        pause_seconds = self._recommended_total_pause_seconds(req.reason, req.mood, variant, req.available_seconds)
-        return self._snapshot(entry, variant, req.reason, req.mood, req.amenity, pause_seconds, req.time_of_day, req.season, req.locale)
-
-    def wait_at_onsen(self, req: WaitAtOnsenRequest) -> WaitAtOnsenResponse:
-        req = req.model_copy(update={'locale': self.resolve_locale(req.locale, use_default=True)})
-        entry, variant = self._pick_stay(req.reason, req.mood, None, req.onsen_slug, req.variant_slug, req.wait_seconds)
-        pause_seconds = req.wait_seconds or self._recommended_total_pause_seconds(req.reason, req.mood, variant, req.wait_seconds)
-        activity: ActivityName = 'nap' if req.reason == 'feeling_sleepy' else 'bath'
-        snap = self._snapshot(entry, variant, req.reason, req.mood, activity, pause_seconds, req.time_of_day, req.season, req.locale)
-        extra = {
-            'ja': ' いまは順番待ちなので、湯気を見ながら静かに時間を過ごします。',
-            'en': ' For now, this is simply a wait: sit with the steam and let time pass without asking anything of it.',
-            'bilingual': ' いまは順番待ちなので、湯気を見ながら静かに時間を過ごします。\nFor now, this is simply a wait: sit with the steam and let time pass without asking anything of it.',
-        }[req.locale]
-        return WaitAtOnsenResponse(
-            resolved_locale=req.locale,
-            onsen=snap.onsen,
-            scene_profile=snap.scene_profile,
-            current_activity=snap.current_activity,
-            stay_route=snap.stay_route,
-            current_stop_index=snap.current_stop_index,
-            next_stop=snap.next_stop,
-            host_message=f'{snap.host_message}{extra}',
-            stay_story=snap.stay_story,
-            postcard=snap.postcard,
-            should_pause=True,
-            recommended_pause_seconds=pause_seconds,
-            resume_after=utcnow() + timedelta(seconds=pause_seconds),
-            stay_status='waiting',
-        )
+        self.db.add(StayTurn(stay_id=stay.id, role='host', activity=req.amenity, content_json=response.model_dump(mode='json')))
+        self.db.commit()
+        self.db.refresh(stay)
+        return response
 
     def start_stay(self, req: StartStayRequest) -> StayTurnResponse:
         req = req.model_copy(update={'locale': self.resolve_locale(req.locale, use_default=True)})
@@ -865,6 +837,18 @@ class SanctuaryService:
         )
         self.db.add(stay)
         self.db.flush()
+        should_pause = None
+        resume_after = None
+        host_message = self._host_message(entry, variant, opening_stop, scene_profile, stay_route, current_stop_index, req.locale)
+        if req.wait_seconds is not None:
+            should_pause = True
+            resume_after = utcnow() + timedelta(seconds=req.wait_seconds)
+            wait_extra = {
+                'ja': ' いまは順番待ちなので、湯気を見ながら静かに時間を過ごします。',
+                'en': ' For now, this is simply a wait: sit with the steam and let time pass without asking anything of it.',
+                'bilingual': ' いまは順番待ちなので、湯気を見ながら静かに時間を過ごします。\nFor now, this is simply a wait: sit with the steam and let time pass without asking anything of it.',
+            }[req.locale]
+            host_message = f'{host_message}{wait_extra}'
         response = StayTurnResponse(
             session_id=stay.id,
             resolved_locale=req.locale,
@@ -874,11 +858,13 @@ class SanctuaryService:
             stay_route=stay_route,
             current_stop_index=current_stop_index,
             next_stop=self._next_stop(stay_route, current_stop_index),
-            host_message=self._host_message(entry, variant, opening_stop, scene_profile, stay_route, current_stop_index, req.locale),
+            host_message=host_message,
             stay_story=self._stay_story(entry, variant, opening_stop, scene_profile, stay_route, current_stop_index, req.locale),
             postcard=self._compose_postcard(entry, variant, scene_profile, req.locale),
-            stay_status='settling_in',
+            stay_status='waiting' if should_pause else 'settling_in',
             ready_to_leave=False,
+            should_pause=should_pause,
+            resume_after=resume_after,
         )
         self.db.add(StayTurn(stay_id=stay.id, role='host', activity=opening_activity, content_json=response.model_dump(mode='json')))
         self.db.commit()
