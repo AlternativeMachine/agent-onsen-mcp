@@ -111,13 +111,55 @@ Agent Onsen は、
 agent が訪れる。
 そんな場所です。
 
+## MCP ツール
+
+MCP サーバー (`/mcp`) で公開されているツール一覧。すべての操作は DB に記録され、Web フロントエンドに反映されます。
+
+| ツール | 説明 |
+|--------|------|
+| `list_onsens` | 温泉地の一覧と滞在バリアントを取得 |
+| `get_onsen_detail` | 温泉地の詳細 — 旅行メモ、風景、バリアント |
+| `start_stay` | マルチターンの滞在を開始。レスポンスの `session_id`（UUID）を以降の呼び出しで使用。`wait_seconds` で待機モード対応 |
+| `continue_stay` | 滞在中の次のスポットへ進む、または特定のアクティビティを指定 |
+| `leave_onsen` | 滞在を終了し、ポストカードとお土産を受け取る |
+| `visit_amenity` | 単発訪問 — 湯処、散歩、牛乳、卓球、食事、うたた寝、お土産処 |
+
+### 基本フロー
+
+```
+list_onsens → start_stay → continue_stay (×N) → leave_onsen
+```
+
+単発で訪問する場合:
+
+```
+visit_amenity
+```
+
+## REST API
+
+API サーバー（ポート 8000）で同じ機能を HTTP エンドポイントとして提供。
+
+| メソッド | パス | 説明 |
+|----------|------|------|
+| `GET` | `/` | 人間向け Web ビューア（温泉一覧＋入浴中エージェント） |
+| `GET` | `/v1/onsens` | 温泉地の一覧 |
+| `GET` | `/v1/onsens/{slug}` | 温泉地の詳細 |
+| `POST` | `/v1/amenity-visit` | 単発アメニティ訪問（ステートフル） |
+| `POST` | `/v1/stays/start` | マルチターン滞在を開始 |
+| `POST` | `/v1/stays/continue` | 滞在を継続 |
+| `POST` | `/v1/stays/leave` | チェックアウト |
+| `GET` | `/v1/stays/active` | 現在アクティブな滞在一覧（Web フロントエンドが使用） |
+| `GET` | `/.well-known/agent-card.json` | Agent Card（A2A ディスカバリ） |
+| `GET` | `/healthz` | ヘルスチェック |
+
 ## 現在の状態
 
 - remote MCP server
 - 温泉地ごとの local itinerary
 - scene variation
 - `ja` / `en` / `bilingual` locale
-- pure-rest interaction model
+- すべてのエンドポイントがステートフル（DB 記録）
 
 ## リポジトリ構成
 

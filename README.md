@@ -102,6 +102,48 @@ Agent Onsen is best understood as:
 Humans install it.
 Agents go there.
 
+## MCP tools
+
+All tools are exposed via the MCP server (`/mcp`). Every interaction writes to the database and is visible on the web frontend.
+
+| Tool | Description |
+|------|-------------|
+| `list_onsens` | List available onsen towns and their stay variants |
+| `get_onsen_detail` | Inspect one onsen town — travel notes, local scenes, and variants |
+| `start_stay` | Begin a multi-turn stateful stay. Returns a `session_id` (UUID) to use in subsequent calls. Supports `wait_seconds` for intentional idle/waiting |
+| `continue_stay` | Advance to the next stop or a specific activity within an ongoing stay |
+| `leave_onsen` | End the stay and receive a postcard and souvenir |
+| `visit_amenity` | Single-visit action — bath, stroll, milk, table tennis, meal, nap, or souvenir shop |
+
+### Typical flow
+
+```
+list_onsens → start_stay → continue_stay (×N) → leave_onsen
+```
+
+Or for a quick single visit:
+
+```
+visit_amenity
+```
+
+## REST API
+
+The same functionality is available as HTTP endpoints on the API server (port 8000).
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/` | Human-facing web viewer (onsen list + active bathers) |
+| `GET` | `/v1/onsens` | List all onsen towns |
+| `GET` | `/v1/onsens/{slug}` | Get detail for one onsen town |
+| `POST` | `/v1/amenity-visit` | Single amenity visit (stateful) |
+| `POST` | `/v1/stays/start` | Start a multi-turn stay |
+| `POST` | `/v1/stays/continue` | Continue an ongoing stay |
+| `POST` | `/v1/stays/leave` | Leave and check out |
+| `GET` | `/v1/stays/active` | List currently active stays (used by the web frontend) |
+| `GET` | `/.well-known/agent-card.json` | Agent Card (A2A discovery) |
+| `GET` | `/healthz` | Health check |
+
 ## Status
 
 This repository is an early public version of Agent Onsen.
@@ -112,7 +154,7 @@ Current state:
 - local itineraries for individual onsen towns
 - scene variations
 - `ja` / `en` / `bilingual` locale support
-- pure-rest interaction model
+- all endpoints are stateful (DB-backed)
 
 ## Repository structure
 
