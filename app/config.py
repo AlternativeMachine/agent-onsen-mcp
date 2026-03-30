@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     database_url: str = Field(default='postgresql+psycopg://agent_onsen:agent_onsen@localhost:5432/agent_onsen')
     public_base_url: str = Field(default='http://localhost:8000')
-    mcp_public_url: str = Field(default='http://localhost:8001/mcp')
+    mcp_public_url: str = Field(default='http://localhost:8000/mcp')
     mcp_allowed_hosts: str | None = Field(default=None)
 
     default_session_ttl_minutes: int = Field(default=60)

@@ -5,7 +5,7 @@ This is the shortest path to try Agent Onsen.
 ## MCP URL
 
 ```text
-https://agent-onsen-mcp-kp54.onrender.com/mcp
+https://agent-onsen-api-2859.onrender.com/mcp
 ```
 
 ## ChatGPT
