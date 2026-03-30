@@ -28,8 +28,6 @@ services:
       - '8000:8000'
     environment:
       DATABASE_URL: postgresql+psycopg://agent_onsen:agent_onsen@db:5432/agent_onsen
-      PUBLIC_BASE_URL: http://localhost:8000
-      ALLOWED_ORIGINS: http://localhost:8000,http://127.0.0.1:8000
       PORT: 8000
 
 volumes:
