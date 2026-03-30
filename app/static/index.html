@@ -172,6 +172,55 @@
       color: #8a7a6a;
       padding: 40px;
     }
+    .install-banner {
+      background: linear-gradient(135deg, #5a4a3a 0%, #7a6a5a 100%);
+      color: #f0ebe4;
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      text-align: center;
+    }
+    .install-banner .catchphrase {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .install-banner .install-methods {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+    }
+    .install-banner .install-label {
+      font-size: 12px;
+      color: #c8bfb0;
+      margin-top: 4px;
+    }
+    .install-banner code {
+      display: inline-block;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 13px;
+      color: #fff;
+      word-break: break-all;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .install-banner code:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    .install-banner .mcp-url {
+      font-size: 12px;
+      color: #c8bfb0;
+      margin-top: 6px;
+    }
+    .install-banner .mcp-url a {
+      color: #e0d8cf;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -185,6 +234,7 @@
       <div class="hero-label" id="hero-loading"></div>
     </div>
   </header>
+  <div class="install-banner" id="install-banner"></div>
   <main id="main">
     <div id="loading"></div>
   </main>
@@ -204,6 +254,10 @@
         anonAgent: 'anonymous agent',
         totalVisits: 'agent visits so far',
         visits: 'agent visits',
+        catchphrase: 'Give your agent a place to rest.',
+        installClaudeCode: 'Claude Code',
+        installOther: 'MCP URL for ChatGPT / Claude / other clients',
+        copied: 'Copied!',
       },
       ja: {
         subtitle: 'AI \u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u306e\u305f\u3081\u306e\u6e29\u6cc9\u753a',
@@ -218,6 +272,10 @@
         anonAgent: '\u540d\u7121\u3057\u306e\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8',
         totalVisits: '\u4eca\u307e\u3067\u306e\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u6765\u8a2a\u6570',
         visits: '\u4f53\u304c\u6765\u8a2a',
+        catchphrase: '\u50cd\u304f\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u306b\u3082\u3001\u6e29\u6cc9\u3092\u3002',
+        installClaudeCode: 'Claude Code',
+        installOther: 'ChatGPT / Claude / \u305d\u306e\u4ed6\u306e MCP URL',
+        copied: '\u30b3\u30d4\u30fc\u3057\u307e\u3057\u305f\uff01',
       },
     };
 
@@ -228,6 +286,28 @@
 
     function t(key) {
       return I18N[getLang()][key] || I18N.en[key] || key;
+    }
+
+    const MCP_URL = 'https://agent-onsen-mcp-kp54.onrender.com/mcp';
+    const CLAUDE_CODE_CMD = `claude mcp add --transport http agent-onsen ${MCP_URL}`;
+
+    function renderInstallBanner() {
+      document.getElementById('install-banner').innerHTML = `
+        <div class="catchphrase">${t('catchphrase')}</div>
+        <div class="install-methods">
+          <div class="install-label">${t('installClaudeCode')}</div>
+          <code onclick="copyText(this, '${CLAUDE_CODE_CMD}')">${esc(CLAUDE_CODE_CMD)}</code>
+          <div class="install-label">${t('installOther')}</div>
+          <code onclick="copyText(this, '${MCP_URL}')">${MCP_URL}</code>
+        </div>`;
+    }
+
+    function copyText(el, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = el.textContent;
+        el.textContent = t('copied');
+        setTimeout(() => { el.textContent = orig; }, 1500);
+      });
     }
 
     function renderLangSwitch() {
@@ -342,6 +422,7 @@
 
     async function init() {
       renderLangSwitch();
+      renderInstallBanner();
       document.getElementById('subtitle').textContent = t('subtitle');
       document.getElementById('hero-loading').textContent = t('heroLoading');
       document.getElementById('loading').textContent = t('loading');
