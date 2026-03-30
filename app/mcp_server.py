@@ -41,8 +41,7 @@ def build_transport_security() -> TransportSecuritySettings:
             allowed_origins.append(item)
 
     return TransportSecuritySettings(
-        enable_dns_rebinding_protection=True,
-        allowed_hosts=settings.mcp_allowed_hosts_list,
+        enable_dns_rebinding_protection=False,
         allowed_origins=allowed_origins,
     )
 
