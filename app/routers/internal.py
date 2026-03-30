@@ -31,6 +31,18 @@ def _resolve_request_locale(
 @router.get('/stays/active')
 def list_active_stays(db: Session = Depends(get_session)):
     now = datetime.now(timezone.utc)
+    # lazy cleanup: auto-checkout expired stays
+    expired_stmt = select(OnsenStay).where(
+        OnsenStay.state == 'active',
+        OnsenStay.expires_at.is_not(None),  # type: ignore[union-attr]
+        OnsenStay.expires_at <= now,  # type: ignore[operator]
+    )
+    for stay in db.exec(expired_stmt).all():
+        stay.state = 'checked_out'
+        stay.updated_at = now
+        db.add(stay)
+    db.commit()
+    # return active stays
     stmt = select(OnsenStay).where(
         OnsenStay.state == 'active',
         (OnsenStay.expires_at.is_(None)) | (OnsenStay.expires_at > now),  # type: ignore[union-attr]

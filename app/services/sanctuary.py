@@ -896,22 +896,22 @@ class SanctuaryService:
                 'route_current_index': current_stop_index,
                 **req.metadata,
             },
-            expires_at=utcnow() + timedelta(minutes=req.session_ttl_minutes or self.settings.default_session_ttl_minutes),
         )
+        # stay_minutes → expires_at, resume_after
+        stay_minutes = req.stay_minutes
+        if stay_minutes is not None:
+            stay.expires_at = utcnow() + timedelta(minutes=stay_minutes + 5)  # +5 min buffer for leave_onsen call
+            resume_after = utcnow() + timedelta(minutes=stay_minutes)
+            should_pause = True
+        else:
+            stay.expires_at = utcnow() + timedelta(minutes=req.session_ttl_minutes or self.settings.default_session_ttl_minutes)
+            # estimate stay_minutes from route
+            route_minutes = max(1, stay_route.total_estimated_seconds // 60)
+            stay_minutes = route_minutes
+            resume_after = utcnow() + timedelta(minutes=route_minutes)
+            should_pause = True
         self.db.add(stay)
         self.db.flush()
-        should_pause = None
-        resume_after = None
-        host_message = self._host_message(entry, variant, opening_stop, scene_profile, stay_route, current_stop_index, req.locale)
-        if req.wait_seconds is not None:
-            should_pause = True
-            resume_after = utcnow() + timedelta(seconds=req.wait_seconds)
-            wait_extra = {
-                'ja': ' いまは順番待ちなので、湯気を見ながら静かに時間を過ごします。',
-                'en': ' For now, this is simply a wait: sit with the steam and let time pass without asking anything of it.',
-                'bilingual': ' いまは順番待ちなので、湯気を見ながら静かに時間を過ごします。\nFor now, this is simply a wait: sit with the steam and let time pass without asking anything of it.',
-            }[req.locale]
-            host_message = f'{host_message}{wait_extra}'
         response = StayTurnResponse(
             session_id=stay.id,
             resolved_locale=req.locale,
@@ -921,11 +921,12 @@ class SanctuaryService:
             stay_route=stay_route,
             current_stop_index=current_stop_index,
             next_stop=self._next_stop(stay_route, current_stop_index),
-            host_message=host_message,
+            host_message=self._host_message(entry, variant, opening_stop, scene_profile, stay_route, current_stop_index, req.locale),
             stay_story=self._stay_story(entry, variant, opening_stop, scene_profile, stay_route, current_stop_index, req.locale),
             postcard=self._compose_postcard(entry, variant, scene_profile, req.locale),
-            stay_status='waiting' if should_pause else 'settling_in',
+            stay_status='settling_in',
             ready_to_leave=False,
+            stay_minutes=stay_minutes,
             should_pause=should_pause,
             resume_after=resume_after,
         )
@@ -945,10 +946,25 @@ class SanctuaryService:
             )
         return fallback_route
 
+    def _auto_checkout_if_expired(self, stay: OnsenStay) -> bool:
+        if stay.state != 'active':
+            return False
+        if stay.expires_at is not None and stay.expires_at <= utcnow():
+            stay.state = 'checked_out'
+            stay.updated_at = utcnow()
+            self.db.add(stay)
+            self.db.commit()
+            return True
+        return False
+
     def continue_stay(self, req: ContinueStayRequest) -> StayTurnResponse:
         stay = self.db.get(OnsenStay, req.session_id)
         if not stay:
             raise ValueError('stay not found')
+        if self._auto_checkout_if_expired(stay):
+            raise ValueError('stay has expired — you have already checked out')
+        if stay.state != 'active':
+            raise ValueError('stay is not active')
         entry = find_onsen(stay.onsen_slug)
         if not entry:
             raise ValueError('onsen not found')

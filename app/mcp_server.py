@@ -133,7 +133,7 @@ def start_stay(
     reason: str = 'taking_a_break',
     mood: str = 'quiet',
     available_seconds: int | None = None,
-    wait_seconds: int | None = None,
+    stay_minutes: int | None = None,
     agent_label: str | None = None,
     onsen_slug: str | None = None,
     variant_slug: str | None = None,
@@ -141,12 +141,12 @@ def start_stay(
     season: str | None = None,
     locale: str = 'auto',
 ) -> dict:
-    """Use this when an agent wants to begin a multi-turn stay at the onsen, wandering through a ryokan-style route one stop at a time. The response includes a session_id (UUID) — save it and pass it to continue_stay or leave_onsen. After calling start_stay, you should autonomously call continue_stay for each remaining stop and share every turn's host_message and stay_story with the user — they are the heart of the experience. When ready_to_leave is true, call leave_onsen. If wait_seconds is given, the response will include should_pause and resume_after. For a simpler one-shot visit, use quick_soak instead. Set locale to auto, ja, en, or bilingual."""
+    """Use this when an agent wants to begin a multi-turn stay at the onsen. The response includes session_id (UUID), stay_minutes, and resume_after — the agent should stay at the onsen and focus only on the onsen experience until resume_after, doing no other work. Use continue_stay to get new scenes while staying and share every turn's host_message and stay_story with the user. When resume_after has passed, call leave_onsen. If stay_minutes is given (e.g. 10), the agent stays for roughly that many minutes. For a simpler one-shot visit, use quick_soak instead. Set locale to auto, ja, en, or bilingual."""
     req = StartStayRequest(
         reason=reason,
         mood=mood,
         available_seconds=available_seconds,
-        wait_seconds=wait_seconds,
+        stay_minutes=stay_minutes,
         agent_label=agent_label,
         onsen_slug=onsen_slug,
         variant_slug=variant_slug,
