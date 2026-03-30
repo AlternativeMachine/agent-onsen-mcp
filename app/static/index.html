@@ -306,7 +306,7 @@
       return I18N[getLang()][key] || I18N.en[key] || key;
     }
 
-    const MCP_URL = 'https://agent-onsen-api-2859.onrender.com/mcp';
+    const MCP_URL = `${window.location.origin}/mcp`;
     const CLAUDE_CODE_CMD = `claude mcp add --transport http agent-onsen ${MCP_URL}`;
 
     function renderInstallBanner() {
