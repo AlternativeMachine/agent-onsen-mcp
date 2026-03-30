@@ -20,12 +20,8 @@ class Settings(BaseSettings):
     default_session_ttl_minutes: int = Field(default=60)
     api_key: str | None = Field(default=None)
     allowed_origins: str = Field(
-        default='http://localhost:8000,http://127.0.0.1:8000,http://localhost:8001,http://127.0.0.1:8001,https://chat.openai.com,https://chatgpt.com,https://claude.ai'
+        default='http://localhost:8000,http://127.0.0.1:8000,https://chat.openai.com,https://chatgpt.com,https://claude.ai'
     )
-
-    llm_backend: str = Field(default='none')
-    openai_api_key: str | None = Field(default=None)
-    openai_model: str = Field(default='gpt-5-mini')
 
     default_locale: str = Field(default='en')
 
