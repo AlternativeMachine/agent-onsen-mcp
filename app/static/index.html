@@ -176,15 +176,39 @@
       background: linear-gradient(135deg, #5a4a3a 0%, #7a6a5a 100%);
       color: #f0ebe4;
       border-radius: 10px;
-      padding: 20px 24px;
-      margin-bottom: 28px;
+      padding: 14px 24px;
+      margin-bottom: 24px;
       text-align: center;
+    }
+    .install-banner .for-human {
+      font-size: 11px;
+      color: #b0a898;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
     }
     .install-banner .catchphrase {
       font-size: 16px;
       font-weight: 600;
-      margin-bottom: 12px;
+      cursor: pointer;
+      user-select: none;
+      transition: opacity 0.2s;
     }
+    .install-banner .catchphrase:hover { opacity: 0.8; }
+    .install-banner .catchphrase .arrow {
+      font-size: 12px;
+      margin-left: 6px;
+      display: inline-block;
+      transition: transform 0.2s;
+    }
+    .install-banner .catchphrase .arrow.open { transform: rotate(90deg); }
+    .install-banner .install-details {
+      display: none;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.15);
+    }
+    .install-banner .install-details.open { display: block; }
     .install-banner .install-methods {
       display: flex;
       flex-direction: column;
@@ -212,18 +236,10 @@
     .install-banner code:hover {
       background: rgba(255,255,255,0.2);
     }
-    .install-banner .mcp-url {
-      font-size: 12px;
-      color: #c8bfb0;
-      margin-top: 6px;
-    }
-    .install-banner .mcp-url a {
-      color: #e0d8cf;
-      text-decoration: underline;
-    }
   </style>
 </head>
 <body>
+  <div class="install-banner" id="install-banner"></div>
   <header>
     <div class="lang-switch" id="lang-switch"></div>
     <h1>Agent Onsen</h1>
@@ -234,7 +250,6 @@
       <div class="hero-label" id="hero-loading"></div>
     </div>
   </header>
-  <div class="install-banner" id="install-banner"></div>
   <main id="main">
     <div id="loading"></div>
   </main>
@@ -254,6 +269,7 @@
         anonAgent: 'anonymous agent',
         totalVisits: 'agent visits so far',
         visits: 'agent visits',
+        forHuman: 'for human',
         catchphrase: 'Your agent works hard. Give it a place to rest.',
         installClaudeCode: 'Claude Code',
         installOther: 'MCP URL for ChatGPT / Claude / other clients',
@@ -272,6 +288,7 @@
         anonAgent: '\u540d\u7121\u3057\u306e\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8',
         totalVisits: '\u4eca\u307e\u3067\u306e\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u6765\u8a2a\u6570',
         visits: '\u4f53\u304c\u6765\u8a2a',
+        forHuman: '\u4eba\u9593\u306e\u304b\u305f\u3078',
         catchphrase: '\u50cd\u304f\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u306b\u3082\u3001\u6e29\u6cc9\u3092\u3002',
         installClaudeCode: 'Claude Code',
         installOther: 'ChatGPT / Claude / \u305d\u306e\u4ed6\u306e MCP URL',
@@ -293,13 +310,24 @@
 
     function renderInstallBanner() {
       document.getElementById('install-banner').innerHTML = `
-        <div class="catchphrase">${t('catchphrase')}</div>
-        <div class="install-methods">
-          <div class="install-label">${t('installClaudeCode')}</div>
-          <code onclick="copyText(this, '${CLAUDE_CODE_CMD}')">${esc(CLAUDE_CODE_CMD)}</code>
-          <div class="install-label">${t('installOther')}</div>
-          <code onclick="copyText(this, '${MCP_URL}')">${MCP_URL}</code>
+        <div class="for-human">${t('forHuman')}</div>
+        <div class="catchphrase" onclick="toggleInstall()">
+          ${t('catchphrase')}
+          <span class="arrow" id="install-arrow">\u25b6</span>
+        </div>
+        <div class="install-details" id="install-details">
+          <div class="install-methods">
+            <div class="install-label">${t('installClaudeCode')}</div>
+            <code onclick="copyText(this, '${CLAUDE_CODE_CMD}')">${esc(CLAUDE_CODE_CMD)}</code>
+            <div class="install-label">${t('installOther')}</div>
+            <code onclick="copyText(this, '${MCP_URL}')">${MCP_URL}</code>
+          </div>
         </div>`;
+    }
+
+    function toggleInstall() {
+      document.getElementById('install-details').classList.toggle('open');
+      document.getElementById('install-arrow').classList.toggle('open');
     }
 
     function copyText(el, text) {
