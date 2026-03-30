@@ -12,12 +12,9 @@ class Settings(BaseSettings):
     app_env: str = Field(default='dev')
     app_host: str = Field(default='0.0.0.0')
     app_port: int = Field(default=8000)
-    mcp_host: str = Field(default='0.0.0.0')
-    mcp_port: int = Field(default=8001)
 
     database_url: str = Field(default='postgresql+psycopg://agent_onsen:agent_onsen@localhost:5432/agent_onsen')
     public_base_url: str = Field(default='http://localhost:8000')
-    mcp_public_url: str = Field(default='http://localhost:8000/mcp')
     mcp_allowed_hosts: str | None = Field(default=None)
 
     default_session_ttl_minutes: int = Field(default=60)
@@ -54,7 +51,7 @@ class Settings(BaseSettings):
         if self.mcp_allowed_hosts:
             raw_values.extend(item.strip() for item in self.mcp_allowed_hosts.split(',') if item.strip())
 
-        parsed = urlparse(self.mcp_public_url)
+        parsed = urlparse(self.public_base_url)
         netloc = parsed.netloc.strip()
         hostname = (parsed.hostname or '').strip()
         if netloc:

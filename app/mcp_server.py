@@ -50,8 +50,8 @@ def build_transport_security() -> TransportSecuritySettings:
 mcp = FastMCP(
     'agent-onsen',
     json_response=True,
-    host=settings.mcp_host,
-    port=settings.mcp_port,
+    host=settings.app_host,
+    port=settings.app_port,
     transport_security=build_transport_security(),
 )
 
@@ -231,4 +231,4 @@ standalone_app.state.settings = settings
 
 
 if __name__ == '__main__':
-    uvicorn.run('app.mcp_server:standalone_app', host=settings.mcp_host, port=settings.mcp_port, proxy_headers=True, forwarded_allow_ips='*')
+    uvicorn.run('app.mcp_server:standalone_app', host=settings.app_host, port=settings.app_port, proxy_headers=True, forwarded_allow_ips='*')
