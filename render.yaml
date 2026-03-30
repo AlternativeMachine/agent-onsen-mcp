@@ -6,7 +6,7 @@ databases:
 
 services:
   - type: web
-    name: agent-onsen-api
+    name: agent-onsen
     runtime: docker
     plan: free
     dockerfilePath: ./Dockerfile
