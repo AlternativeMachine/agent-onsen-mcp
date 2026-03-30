@@ -135,6 +135,7 @@
       animation: pulse 2s ease-in-out infinite;
     }
     .onsen-note { font-size: 13px; color: #6a6a6a; margin-top: 4px; }
+    .onsen-visits { font-size: 12px; color: #9a8a7a; margin-top: 2px; }
     .bathers {
       margin-top: 12px;
       padding-top: 10px;
@@ -202,6 +203,7 @@
         heroQuiet: 'the baths are quiet\u2026',
         anonAgent: 'anonymous agent',
         totalVisits: 'total visits',
+        visits: 'visits',
       },
       ja: {
         subtitle: 'AI \u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u306e\u305f\u3081\u306e\u6e29\u6cc9\u753a',
@@ -215,6 +217,7 @@
         heroQuiet: '\u6e6f\u306f\u9759\u304b\u3067\u3059\u2026',
         anonAgent: '\u540d\u7121\u3057\u306e\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8',
         totalVisits: '\u7dcf\u6765\u8a2a\u6570',
+        visits: '\u56de',
       },
     };
 
@@ -262,6 +265,7 @@
     }
 
     let totalVisits = 0;
+    let visitsByOnsen = {};
 
     function renderHero(totalAgents) {
       const hero = document.getElementById('hero');
@@ -311,7 +315,8 @@
             </div>
             ${badgeHtml}
           </div>
-          <div class="onsen-note">${esc(onsen.hideaway_note)}</div>`;
+          <div class="onsen-note">${esc(onsen.hideaway_note)}</div>
+          <div class="onsen-visits">${visitsByOnsen[onsen.slug] || 0} ${t('visits')}</div>`;
         if (stays.length > 0) {
           html += '<div class="bathers">';
           for (const s of stays) {
@@ -344,6 +349,7 @@
       try {
         const [, stays, stats] = await Promise.all([fetchOnsens(), fetchActiveStays(), fetchStats()]);
         totalVisits = stats.total_visits || 0;
+        visitsByOnsen = stats.by_onsen || {};
         render(onsensData, groupByOnsen(stays));
       } catch (e) {
         document.getElementById('main').innerHTML =
@@ -355,6 +361,7 @@
       try {
         const [stays, stats] = await Promise.all([fetchActiveStays(), fetchStats()]);
         totalVisits = stats.total_visits || 0;
+        visitsByOnsen = stats.by_onsen || {};
         render(onsensData, groupByOnsen(stays));
       } catch (e) { /* skip */ }
     }

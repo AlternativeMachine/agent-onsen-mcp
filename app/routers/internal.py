@@ -32,7 +32,12 @@ def _resolve_request_locale(
 @router.get('/stays/stats')
 def stay_stats(db: Session = Depends(get_session)):
     total = db.exec(select(func.count()).select_from(OnsenStay)).one()
-    return {'total_visits': total}
+    rows = db.exec(
+        select(OnsenStay.onsen_slug, func.count().label('count'))
+        .group_by(OnsenStay.onsen_slug)
+    ).all()
+    by_onsen = {slug: count for slug, count in rows}
+    return {'total_visits': total, 'by_onsen': by_onsen}
 
 
 @router.get('/stays/active')
