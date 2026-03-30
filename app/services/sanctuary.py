@@ -768,6 +768,7 @@ class SanctuaryService:
             current_activity=req.amenity,
             onsen_slug=entry.slug,
             variant_slug=variant.slug,
+            state='checked_out',
             meta_json={
                 'scene_time_of_day': scene_profile.time_of_day,
                 'scene_season': scene_profile.season,
