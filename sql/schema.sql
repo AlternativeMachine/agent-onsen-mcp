@@ -9,9 +9,9 @@ CREATE TABLE IF NOT EXISTS onsenstay (
   state TEXT NOT NULL DEFAULT 'active',
   turn_count INTEGER NOT NULL DEFAULT 0,
   meta_json JSON NOT NULL,
-  created_at TIMESTAMP NOT NULL,
-  updated_at TIMESTAMP NOT NULL,
-  expires_at TIMESTAMP
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL,
+  expires_at TIMESTAMPTZ
 );
 
 CREATE TABLE IF NOT EXISTS stayturn (
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS stayturn (
   role TEXT NOT NULL,
   activity TEXT NOT NULL,
   content_json JSON NOT NULL,
-  created_at TIMESTAMP NOT NULL
+  created_at TIMESTAMPTZ NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS ix_stayturn_stay_id ON stayturn(stay_id);

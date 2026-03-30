@@ -1,0 +1,5 @@
+-- Migrate TIMESTAMP columns to TIMESTAMPTZ (assumes stored values are UTC)
+ALTER TABLE onsenstay ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC';
+ALTER TABLE onsenstay ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC';
+ALTER TABLE onsenstay ALTER COLUMN expires_at TYPE TIMESTAMPTZ USING expires_at AT TIME ZONE 'UTC';
+ALTER TABLE stayturn  ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC';
