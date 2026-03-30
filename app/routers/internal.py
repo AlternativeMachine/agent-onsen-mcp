@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Header, HTTPException
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from ..db import get_session
@@ -26,6 +27,12 @@ def _resolve_request_locale(
     use_default: bool,
 ):
     return svc.resolve_locale(requested, accept_language=accept_language, host_locale=host_locale, use_default=use_default)
+
+
+@router.get('/stays/stats')
+def stay_stats(db: Session = Depends(get_session)):
+    total = db.exec(select(func.count()).select_from(OnsenStay)).one()
+    return {'total_visits': total}
 
 
 @router.get('/stays/active')
