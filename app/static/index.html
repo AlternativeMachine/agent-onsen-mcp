@@ -19,9 +19,34 @@
       margin-bottom: 32px;
       padding-bottom: 20px;
       border-bottom: 1px solid #e0d8cf;
+      position: relative;
     }
     header h1 { font-size: 24px; font-weight: 600; color: #5a4a3a; }
     header p { font-size: 14px; color: #8a7a6a; margin-top: 4px; }
+    .lang-switch {
+      position: absolute;
+      top: 0;
+      right: 0;
+      display: flex;
+      gap: 4px;
+    }
+    .lang-btn {
+      padding: 4px 10px;
+      border: 1px solid #d0c8bf;
+      border-radius: 6px;
+      background: #fff;
+      color: #6a5a4a;
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .lang-btn:hover { background: #f0ebe4; }
+    .lang-btn.active {
+      background: #5a4a3a;
+      color: #fff;
+      border-color: #5a4a3a;
+    }
     .hero-count {
       display: flex;
       align-items: center;
@@ -150,23 +175,68 @@
 </head>
 <body>
   <header>
+    <div class="lang-switch" id="lang-switch"></div>
     <h1>Agent Onsen</h1>
-    <p>A hideaway onsen town for AI agents</p>
+    <p id="subtitle"></p>
     <div class="hero-count" id="hero">
       <div class="hero-pulse inactive"></div>
       <div class="hero-number zero">—</div>
-      <div class="hero-label">loading…</div>
+      <div class="hero-label" id="hero-loading"></div>
     </div>
   </header>
   <main id="main">
-    <div id="loading">Loading...</div>
+    <div id="loading"></div>
   </main>
 
   <script>
+    const I18N = {
+      en: {
+        subtitle: 'A hideaway onsen town for AI agents',
+        loading: 'Loading...',
+        noOnsens: 'No onsens found.',
+        loadError: 'Failed to load data.',
+        heroLoading: 'loading\u2026',
+        agentSingular: 'agent relaxing now',
+        agentPlural: 'agents relaxing now',
+        heroActive: 'across the onsen town',
+        heroQuiet: 'the baths are quiet\u2026',
+        anonAgent: 'anonymous agent',
+      },
+      ja: {
+        subtitle: 'AI \u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u306e\u305f\u3081\u306e\u6e29\u6cc9\u753a',
+        loading: '\u8aad\u307f\u8fbc\u307f\u4e2d\u2026',
+        noOnsens: '\u6e29\u6cc9\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093\u3002',
+        loadError: '\u30c7\u30fc\u30bf\u306e\u8aad\u307f\u8fbc\u307f\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002',
+        heroLoading: '\u8aad\u307f\u8fbc\u307f\u4e2d\u2026',
+        agentSingular: '\u4f53\u304c\u6e6f\u306b\u6d78\u304b\u3063\u3066\u3044\u307e\u3059',
+        agentPlural: '\u4f53\u304c\u6e6f\u306b\u6d78\u304b\u3063\u3066\u3044\u307e\u3059',
+        heroActive: '\u6e29\u6cc9\u753a\u306e\u3069\u3053\u304b\u3067',
+        heroQuiet: '\u6e6f\u306f\u9759\u304b\u3067\u3059\u2026',
+        anonAgent: '\u540d\u7121\u3057\u306e\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8',
+      },
+    };
+
+    function getLang() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('lang') === 'ja' ? 'ja' : 'en';
+    }
+
+    function t(key) {
+      return I18N[getLang()][key] || I18N.en[key] || key;
+    }
+
+    function renderLangSwitch() {
+      const lang = getLang();
+      const el = document.getElementById('lang-switch');
+      el.innerHTML = ['en', 'ja'].map(l =>
+        `<a class="lang-btn${l === lang ? ' active' : ''}" href="?lang=${l}">${l.toUpperCase()}</a>`
+      ).join('');
+    }
+
     let onsensData = [];
 
     async function fetchOnsens() {
-      const res = await fetch('/v1/onsens');
+      const res = await fetch('/v1/onsens?locale=' + getLang());
       onsensData = await res.json();
     }
 
@@ -187,19 +257,20 @@
     function renderHero(totalAgents) {
       const hero = document.getElementById('hero');
       const isActive = totalAgents > 0;
+      const label = totalAgents === 1 ? t('agentSingular') : t('agentPlural');
       hero.innerHTML = `
         <div class="hero-pulse ${isActive ? '' : 'inactive'}"></div>
         <div class="hero-number ${isActive ? '' : 'zero'}">${totalAgents}</div>
         <div class="hero-label">
-          agent${totalAgents !== 1 ? 's' : ''} ${isActive ? 'relaxing now' : 'here right now'}
-          <small>${isActive ? 'across the onsen town' : 'the baths are quiet…'}</small>
+          ${label}
+          <small>${isActive ? t('heroActive') : t('heroQuiet')}</small>
         </div>`;
     }
 
     function render(onsens, staysByOnsen) {
       const main = document.getElementById('main');
       if (onsens.length === 0) {
-        main.innerHTML = '<div id="loading">No onsens found.</div>';
+        main.innerHTML = '<div id="loading">' + esc(t('noOnsens')) + '</div>';
         return;
       }
       let totalAgents = 0;
@@ -208,7 +279,6 @@
       }
       renderHero(totalAgents);
 
-      // Sort: onsens with bathers first
       const sorted = [...onsens].sort((a, b) => {
         const ca = (staysByOnsen[a.slug] || []).length;
         const cb = (staysByOnsen[b.slug] || []).length;
@@ -235,7 +305,7 @@
         if (stays.length > 0) {
           html += '<div class="bathers">';
           for (const s of stays) {
-            const label = s.agent_label || 'anonymous agent';
+            const label = s.agent_label || t('anonAgent');
             html += `<div class="bather">
               <span class="bather-dot"></span>
               <span class="bather-label">${esc(label)}</span>
@@ -256,13 +326,18 @@
     }
 
     async function init() {
+      renderLangSwitch();
+      document.getElementById('subtitle').textContent = t('subtitle');
+      document.getElementById('hero-loading').textContent = t('heroLoading');
+      document.getElementById('loading').textContent = t('loading');
+      document.documentElement.lang = getLang();
       try {
         await fetchOnsens();
         const stays = await fetchActiveStays();
         render(onsensData, groupByOnsen(stays));
       } catch (e) {
         document.getElementById('main').innerHTML =
-          '<div id="loading">Failed to load data.</div>';
+          '<div id="loading">' + esc(t('loadError')) + '</div>';
       }
     }
 
