@@ -1,9 +1,9 @@
-"""Standalone MCP server process with minimum production guards.
+"""MCP tool definitions for Agent Onsen.
 
-Run with:
-    uvicorn app.mcp_server:app --host 0.0.0.0 --port 8001
+The FastMCP instance is created here and mounted into the main FastAPI app
+at /mcp.  It can also be run standalone for development:
 
-In production, expose this behind a stable HTTPS endpoint on /mcp.
+    uvicorn app.mcp_server:standalone_app --host 0.0.0.0 --port 8001
 """
 
 from __future__ import annotations
@@ -41,8 +41,7 @@ def build_transport_security() -> TransportSecuritySettings:
             allowed_origins.append(item)
 
     return TransportSecuritySettings(
-        enable_dns_rebinding_protection=True,
-        allowed_hosts=settings.mcp_allowed_hosts_list,
+        enable_dns_rebinding_protection=False,
         allowed_origins=allowed_origins,
     )
 
@@ -50,8 +49,8 @@ def build_transport_security() -> TransportSecuritySettings:
 mcp = FastMCP(
     'agent-onsen',
     json_response=True,
-    host=settings.mcp_host,
-    port=settings.mcp_port,
+    host=settings.app_host,
+    port=settings.app_port,
     transport_security=build_transport_security(),
 )
 
@@ -189,40 +188,46 @@ def leave_onsen(session_id: str, locale: str | None = None) -> dict:
         return SanctuaryService(db).leave_onsen(session_id, locale).model_dump()
 
 
+# --- Standalone app (for development or backward-compat) ---
+
 async def healthz(_request) -> JSONResponse:
     return JSONResponse({'ok': True})
 
 
 @asynccontextmanager
-async def lifespan(_app: Starlette):
+async def _standalone_lifespan(_app: Starlette):
     create_db_and_tables()
     async with mcp.session_manager.run():
         yield
 
 
-middleware: list[Middleware] = []
-cors_kwargs = build_cors_kwargs(settings)
-if cors_kwargs:
-    middleware.append(Middleware(CORSMiddleware, **cors_kwargs))
-middleware.append(
-    Middleware(
-        OnsenSecurityMiddleware,
-        settings=settings,
-        protected_prefixes=('/mcp',),
-        exempt_paths=('/healthz',),
+def build_standalone_app() -> Starlette:
+    """Build a standalone Starlette app (used only when running mcp_server directly)."""
+    middleware: list[Middleware] = []
+    cors_kwargs = build_cors_kwargs(settings)
+    if cors_kwargs:
+        middleware.append(Middleware(CORSMiddleware, **cors_kwargs))
+    middleware.append(
+        Middleware(
+            OnsenSecurityMiddleware,
+            settings=settings,
+            protected_prefixes=('/mcp',),
+            exempt_paths=('/healthz',),
+        )
     )
-)
+    return Starlette(
+        routes=[
+            Route('/healthz', endpoint=healthz),
+            Mount('/', app=mcp.streamable_http_app()),
+        ],
+        middleware=middleware,
+        lifespan=_standalone_lifespan,
+    )
 
-app = Starlette(
-    routes=[
-        Route('/healthz', endpoint=healthz),
-        Mount('/', app=mcp.streamable_http_app()),
-    ],
-    middleware=middleware,
-    lifespan=lifespan,
-)
-app.state.settings = settings
+
+standalone_app = build_standalone_app()
+standalone_app.state.settings = settings
 
 
 if __name__ == '__main__':
-    uvicorn.run('app.mcp_server:app', host=settings.mcp_host, port=settings.mcp_port, proxy_headers=True, forwarded_allow_ips='*')
+    uvicorn.run('app.mcp_server:standalone_app', host=settings.app_host, port=settings.app_port, proxy_headers=True, forwarded_allow_ips='*')

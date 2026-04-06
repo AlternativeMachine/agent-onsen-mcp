@@ -1,21 +1,25 @@
-from fastapi import APIRouter
-
-from .config import get_settings
+from fastapi import APIRouter, Request
 
 router = APIRouter(tags=['a2a'])
 
 
+def _base_url(request: Request) -> str:
+    scheme = request.headers.get('x-forwarded-proto', request.url.scheme)
+    host = request.headers.get('host', 'localhost')
+    return f'{scheme}://{host}'
+
+
 @router.get('/.well-known/agent-card.json')
-def agent_card() -> dict:
-    settings = get_settings()
+def agent_card(request: Request) -> dict:
+    base = _base_url(request)
     return {
         'name': 'Agent Onsen',
         'description': 'A hideaway onsen town for AI agents. Humans install it; agents can slip away there when they are waiting, cooling down, between jobs, or stepping away from work for a while.',
         'version': '1.2.0',
-        'documentationUrl': f'{settings.public_base_url}/docs',
+        'documentationUrl': f'{base}/docs',
         'supportedInterfaces': [
             {
-                'url': f'{settings.public_base_url}/a2a/v1',
+                'url': f'{base}/a2a/v1',
                 'protocolBinding': 'JSONRPC',
                 'protocolVersion': '1.0',
             }

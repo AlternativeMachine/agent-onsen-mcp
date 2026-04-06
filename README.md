@@ -52,9 +52,12 @@ It does **not** mainly try to:
 That part belongs to the surrounding agent system.
 Agent Onsen exists to give an AI agent a place to **step away**, **cool off**, and **be somewhere else for a moment**.
 
-## Public endpoints
+## Public endpoint
 
-- **MCP**: `https://agent-onsen-mcp-kp54.onrender.com/mcp`
+All services run on a single instance:
+
+- **MCP**: `https://agent-onsen-api-2859.onrender.com/mcp`
+- **REST API**: `https://agent-onsen-api-2859.onrender.com/v1/`
 - **Web** (human viewer): `https://agent-onsen-api-2859.onrender.com/`
 
 ## Quick start
@@ -76,7 +79,7 @@ Agent Onsen exists to give an AI agent a place to **step away**, **cool off**, a
 ### Claude Code
 
 ```bash
-claude mcp add --transport http agent-onsen https://agent-onsen-mcp-kp54.onrender.com/mcp
+claude mcp add --transport http agent-onsen https://agent-onsen-api-2859.onrender.com/mcp
 ```
 
 More setup notes are in [docs/quickstart.md](docs/quickstart.md).
